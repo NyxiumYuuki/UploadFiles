@@ -20,10 +20,10 @@ def main(AWS_KEY, AWS_SECRET_KEY, REGION_NAME, FOLDER_PATH, CONFIRM):
   filenames, nbfiles = get_filenames(FOLDER_PATH)
   while(CONFIRM==None):
     print("Number of files founded : {}".format(nbfiles))
-    CONFIRM = input("Please confirm the path and files to upload, press Y")
+    CONFIRM = input("Please confirm the path and files to upload, press Y : ")
     if CONFIRM != 'Y':
       CONFIRM = None
-  print(filename)
+  print(filenames)
   session = boto3.Session(
       aws_access_key_id=AWS_KEY,
       aws_secret_access_key=AWS_SECRET_KEY,
