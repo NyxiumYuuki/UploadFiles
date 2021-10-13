@@ -62,8 +62,8 @@ def upload(filepath, filename, current_nb_file, total_nb_files):
     s3 = boto3.resource(
         service_name='s3',
         region_name=REGION_NAME,
-        aws_access_key_id=AWS_ACCESS_KEY,
-        aws_secret_access_key=AWS_SECRET_ACCESS_KEY
+        AWSAccessKeyId_id=AWSAccessKeyId,
+        AWSSecretKey=AWSSecretKey
     )
     try:
         s3.Bucket(BUCKET_NAME).upload_file(Filename=filepath, Key=filename, Callback=ProgressPercentage(filename, current_nb_file, total_nb_files))
@@ -110,33 +110,33 @@ if __name__ == '__main__':
     else:
         logging.basicConfig(stream=sys.stderr, level=logging.ERROR)
 
-    pattern_aws_access_key = "(?<![A-Z0-9])[A-Z0-9]{20}(?![A-Z0-9])"
-    pattern_aws_secret_access_key = "(?<![A-Za-z0-9/+=])[A-Za-z0-9/+=]{40}(?![A-Za-z0-9/+=])"
-    re_aws_access_key = re.compile(pattern_aws_access_key)
-    re_aws_secret_access_key = re.compile(pattern_aws_secret_access_key)
+    pattern_AWSAccessKeyId = "(?<![A-Z0-9])[A-Z0-9]{20}(?![A-Z0-9])"
+    pattern_AWSSecretKey = "(?<![A-Za-z0-9/+=])[A-Za-z0-9/+=]{40}(?![A-Za-z0-9/+=])"
+    re_AWSAccessKeyId = re.compile(pattern_AWSAccessKeyId)
+    re_AWSSecretKey = re.compile(pattern_AWSSecretKey)
 
-    AWS_ACCESS_KEY = os.getenv('AWS_ACCESS_KEY', default=None)
-    if AWS_ACCESS_KEY is None:
-        logging.error('No AWS_ACCESS_KEY in Sys Env Variables')
+    AWSAccessKeyId = os.getenv('AWSAccessKeyId', default=None)
+    if AWSAccessKeyId is None:
+        logging.error('No AWSAccessKeyId in Sys Env Variables')
         sys.exit(1)
-    elif re_aws_access_key.pattern(AWS_ACCESS_KEY) is False:
-        logging.error('AWS_ACCESS_KEY Incorrect Pattern, it should be "%s"', pattern_aws_access_key)
+    elif re_AWSAccessKeyId.pattern(AWSAccessKeyId) is False:
+        logging.error('AWSAccessKeyId Incorrect Pattern, it should be "%s"', pattern_AWSAccessKeyId)
         sys.exit(10)
     else:
-        logging.info('AWS_ACCESS_KEY found')
+        logging.info('AWSAccessKeyId found')
 
-    AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY', default=None)
-    if AWS_SECRET_ACCESS_KEY is None:
-        logging.error('No AWS_SECRET_ACCESS_KEY in Sys Env Variables')
+    AWSSecretKey = os.getenv('AWSSecretKey', default=None)
+    if AWSSecretKey is None:
+        logging.error('No AWSSecretKey in Sys Env Variables')
         sys.exit(2)
-    elif re_aws_secret_access_key.pattern(AWS_SECRET_ACCESS_KEY) is False:
-        logging.error('AWS_SECRET_ACCESS_KEY Incorrect Pattern, it should be "%s"', pattern_aws_secret_access_key)
+    elif re_AWSSecretKey.pattern(AWSSecretKey) is False:
+        logging.error('AWSSecretKey Incorrect Pattern, it should be "%s"', pattern_AWSSecretKey)
         sys.exit(10)
     else:
-        logging.info('AWS_SECRET_ACCESS_KEY found')
+        logging.info('AWSSecretKey found')
 
-    logging.debug('AWS_ACCESS_KEY : %s ', AWS_ACCESS_KEY)
-    logging.debug('AWS_SECRET_ACCESS_KEY : %s', AWS_SECRET_ACCESS_KEY)
+    logging.debug('AWSAccessKeyId : %s ', AWSAccessKeyId)
+    logging.debug('AWSSecretKey : %s', AWSSecretKey)
     logging.info('Path : %s', args.path)
     logging.info('Region : %s', args.region)
     logging.info('Bucket : %s', args.bucket)
@@ -150,7 +150,7 @@ if __name__ == '__main__':
     CONFIRM = args.y
 
     subfolders, fullpath = run_fast_scandir(PATH)
-    toRemove = filename.rsplit('/', 1)[0]
+    toRemove = PATH.rsplit('/', 1)[0]
     nbfiles = len(fullpath)
     topath = []
     for path in fullpath:
@@ -165,8 +165,8 @@ if __name__ == '__main__':
     s3 = boto3.resource(
         service_name='s3',
         region_name=REGION_NAME,
-        aws_access_key_id=AWS_ACCESS_KEY,
-        aws_secret_access_key=AWS_SECRET_ACCESS_KEY
+        AWSAccessKeyId_id=AWSAccessKeyId,
+        AWSSecretKey=AWSSecretKey
     )
     logging.info(s3)
     logging.info('Buckets found %d', len(list(s3.buckets.all())))
