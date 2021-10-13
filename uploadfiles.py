@@ -30,6 +30,7 @@ def main(AWS_KEY, AWS_SECRET_KEY, REGION_NAME, FOLDER_PATH, CONFIRM):
       region_name=REGION_NAME
   )
   s3 = session.resource('s3')
+  print(s3)
 
 if __name__ == "__main__":
   #TODO	Verify keys reggex
