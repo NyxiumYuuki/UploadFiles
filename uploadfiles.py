@@ -5,7 +5,7 @@ http://ls.pwd.io/2013/06/parallel-s3-uploads-using-boto-and-threads-in-python/
 """
 import argparse, sys
 import os
-from boto3
+import boto3
 import threading
 
 
@@ -41,8 +41,8 @@ if __name__ == "__main__":
   
   #TODO	Get Sys Args
   parser=argparse.ArgumentParser()
-  parser.add_argument('--bar', help='Do the bar option')
-  parser.add_argument('--foo', help='Foo the program')
+  parser.add_argument('--path', help='Path of folder to upload')
+  parser.add_argument('--region', help='AWS region')
   args=parser.parse_args()
   print(args)
   print(sys)
