@@ -92,7 +92,7 @@ if __name__ == '__main__':
     optional.add_argument('-t', '--threads', help='Number of Threads (default: 20)', default=20)
     optional.add_argument('-y', '-Y', help='Confirm path (default: False)', default=False, action='store_true')
 
-    optional.add_argument('-i', '--info', help='Info mode (default: True)', default=True, action='store_false')
+    optional.add_argument('-i', '--info', help='Disable Info mode (default: True)', default=True, action='store_false')
     optional.add_argument('-d', '--debug', help='Debug mode (default: False)', default=False, action='store_true')
 
     try:
