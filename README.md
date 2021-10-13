@@ -1,7 +1,7 @@
 # UploadFiles
 UploadFiles with Threads for AWS S3 Buckets
 
-
+0. Download the zip & extract the project
 1. Install needed libraries : `pip install -r requirements.txt`
 2. Set environnement variables : 
   - `set AWSAccessKeyId=YOUR_AWS_ACCESS_KEY_HERE` & `set AWSSecretKey=YOUR_AWS_SECRET_KEY_HERE` 
