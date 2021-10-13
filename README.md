@@ -10,7 +10,7 @@ UploadFiles with Threads for AWS S3 Buckets
   - Check if the environnement variables are stored.
     - On Windows - Powershell : `echo $Env:AWSAccessKeyId` & `echo $Env:AWSSecretKey`
     - On Linux shell : `echo $AWSAccessKeyId` & `echo $AWSSecretKey`
-5. run the script `python uploadfiles.py -p PATH_HERE -b S3_BUCKET_NAME_HERE -r AWS_S3_REGION_HERE`
+5. Run the script `python uploadfiles.py -p PATH_HERE -b S3_BUCKET_NAME_HERE -r AWS_S3_REGION_HERE`
 6. Check optional arguments if needed
 ```
 usage: uploadfiles.py [-h] -p PATH -b BUCKET [-r REGION] [-t THREADS] [-y] [-i] [-d]
