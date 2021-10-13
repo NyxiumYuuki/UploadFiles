@@ -14,18 +14,22 @@ def get_filenames(folder_path):
   for path, subdirs, files in os.walk(folder_path):
     for name in files:
         filenames.append(os.path.join(path, name))
-  return filenames
+  return filenames, len(filenames)
 
-def main(AWS_KEY, AWS_SECRET_KEY, REGION_NAME, FOLDER_PATH):
+def main(AWS_KEY, AWS_SECRET_KEY, REGION_NAME, FOLDER_PATH, CONFIRM):
+  filenames, nbfiles = get_filenames(FOLDER_PATH)
+  while(CONFIRM==None):
+    print("Number of files founded : {}".format(nbfiles))
+    CONFIRM = input("Please confirm the path and files to upload, press Y")
+    if CONFIRM != 'Y':
+      CONFIRM = None
+  print(filename)
   session = boto3.Session(
       aws_access_key_id=AWS_KEY,
       aws_secret_access_key=AWS_SECRET_KEY,
       region_name=REGION_NAME
   )
   s3 = session.resource('s3')
-  print(os.getcwd())
-  filenames = get_filenames(FOLDER_PATH)
-  print(filenames)
 
 if __name__ == "__main__":
   #TODO	Verify keys reggex
@@ -43,6 +47,7 @@ if __name__ == "__main__":
   parser=argparse.ArgumentParser()
   parser.add_argument('--path', help='Path of folder to upload')
   parser.add_argument('--region', help='AWS region')
+  parser.add_argument('-y', help='Confirm path')
   args=parser.parse_args()
   print(args)
   print(sys)
@@ -53,5 +58,5 @@ if __name__ == "__main__":
   REGION_NAME = args.region
   if REGION_NAME == None:
   	REGION_NAME = "eu-west-3"
-  print(FOLDER_PATH, REGION_NAME)
-  main(AWS_KEY, AWS_SECRET_KEY, REGION_NAME, FOLDER_PATH)
+  print(FOLDER_PATH, REGION_NAME, args.y)
+  main(AWS_KEY, AWS_SECRET_KEY, REGION_NAME, FOLDER_PATH, args.y)
