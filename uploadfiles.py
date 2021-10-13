@@ -18,12 +18,12 @@ def get_filenames(folder_path):
 
 def main(AWS_KEY, AWS_SECRET_KEY, REGION_NAME, FOLDER_PATH, CONFIRM):
   filenames, nbfiles = get_filenames(FOLDER_PATH)
-  print("Number of files founded : {}".format(nbfiles))
+  print("Number of files founded in "{}" : {}".format(FOLDER_PATH, nbfiles))
   while(CONFIRM==None):
     CONFIRM = input("Please confirm the path and files to upload, press Y : ")
     if CONFIRM != 'Y':
       CONFIRM = None
-  print(filenames)
+  print("Create Boto3 Session")
   session = boto3.Session(
       aws_access_key_id=AWS_KEY,
       aws_secret_access_key=AWS_SECRET_KEY,
