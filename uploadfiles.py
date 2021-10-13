@@ -18,8 +18,8 @@ def get_filenames(folder_path):
 
 def main(AWS_KEY, AWS_SECRET_KEY, REGION_NAME, FOLDER_PATH, CONFIRM):
   filenames, nbfiles = get_filenames(FOLDER_PATH)
+  print("Number of files founded : {}".format(nbfiles))
   while(CONFIRM==None):
-    print("Number of files founded : {}".format(nbfiles))
     CONFIRM = input("Please confirm the path and files to upload, press Y : ")
     if CONFIRM != 'Y':
       CONFIRM = None
