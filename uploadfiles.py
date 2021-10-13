@@ -29,12 +29,12 @@ def main(AWS_KEY, AWS_SECRET_KEY, REGION_NAME, FOLDER_PATH):
 
 if __name__ == "__main__":
   #TODO	Verify keys reggex
-  AWS_KEY = os.getenv('AWS_KEY', default=None)
+  AWS_KEY = os.getenv('AWS_KEY', default="test")
   if AWS_KEY == None:
   	print("No AWS_KEY in Sys Env Variables")
   	exit()
   
-  AWS_SECRET_KEY = os.getenv('AWS_SECRET_KEY', default=None)
+  AWS_SECRET_KEY = os.getenv('AWS_SECRET_KEY', default="test_secret")
   if AWS_SECRET_KEY == None:
   	print("No AWS_SECRET_KEY in Sys Env Variables")
   	exit()
@@ -47,6 +47,11 @@ if __name__ == "__main__":
   print(args)
   print(sys)
   
-  FOLDER_PATH = "test/"
-  REGION_NAME = 'euwest'
+  FOLDER_PATH = args.path
+  if FOLDER_PATH == None:
+  	FOLDER_PATH = "."
+  REGION_NAME = args.region
+  if REGION_NAME == None:
+  	REGION_NAME = "eu-west-3"
+  print(FOLDER_PATH, REGION_NAME)
   main(AWS_KEY, AWS_SECRET_KEY, REGION_NAME, FOLDER_PATH)
