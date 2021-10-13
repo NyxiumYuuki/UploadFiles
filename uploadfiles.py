@@ -16,11 +16,12 @@ import re
 
 class ProgressPercentage(object):
 
-    def __init__(self, filename, current_nb_file, total_nb_files):
+    def __init__(self, filepath, filename, current_nb_file, total_nb_files):
         self._filename = filename
+        self._filepath = filepath
         self._current_nb_file = current_nb_file
         self._total_nb_files = total_nb_files
-        self._size = float(os.path.getsize(filename))
+        self._size = float(os.path.getsize(filepath))
         self._seen_so_far = 0
         self._lock = threading.Lock()
 
@@ -37,11 +38,6 @@ class ProgressPercentage(object):
                     self._size,
                     percentage))
             sys.stdout.flush()
-
-
-def get_filenames(folder_path):
-    result = [os.path.join(dp, f) for dp, dn, filenames in os.walk(folder_path) for f in filenames]
-    return result, len(result)
 
 def run_fast_scandir(dir):    # dir: str, ext: list
     subfolders, files = [], []
@@ -62,11 +58,11 @@ def upload(filepath, filename, current_nb_file, total_nb_files):
     s3 = boto3.resource(
         service_name='s3',
         region_name=REGION_NAME,
-        AWSAccessKeyId_id=AWSAccessKeyId,
-        AWSSecretKey=AWSSecretKey
+        aws_access_key_id=AWSAccessKeyId,
+        aws_secret_access_key=AWSSecretKey
     )
     try:
-        s3.Bucket(BUCKET_NAME).upload_file(Filename=filepath, Key=filename, Callback=ProgressPercentage(filename, current_nb_file, total_nb_files))
+        s3.Bucket(BUCKET_NAME).upload_file(Filename=filepath, Key=filename, Callback=ProgressPercentage(filepath, filename,current_nb_file, total_nb_files))
     except botocore.exceptions.ClientError as error:
         logging.error(error)
         sys.exit(4)
@@ -75,13 +71,13 @@ def upload(filepath, filename, current_nb_file, total_nb_files):
 
 def worker():
     while True:
-        file, current_nb_file, total_nb_files = q.get()
-        if file is None:
+        filepath, filename, current_nb_file, total_nb_files = q.get()
+        if filepath is None or filename is None:
             break
-        if upload(file, current_nb_file, total_nb_files):
+        if upload(filepath, filename, current_nb_file, total_nb_files):
             q.task_done()
         else:
-            logging.error('Task error for %s [%d/%d]', file, current_nb_file, total_nb_files)
+            logging.error('Task error for %s [%d/%d]', filepath, current_nb_file, total_nb_files)
             sys.exit(5)
 
 
@@ -96,8 +92,9 @@ if __name__ == '__main__':
     optional.add_argument('-t', '--threads', help='Number of Threads (default: 20)', default=20)
     optional.add_argument('-y', '-Y', help='Confirm path (default: False)', default=False, action='store_true')
 
+    optional.add_argument('-i', '--info', help='Info mode (default: True)', default=True, action='store_false')
     optional.add_argument('-d', '--debug', help='Debug mode (default: False)', default=False, action='store_true')
-    optional.add_argument('-i', '--info', help='Info mode (default: False)', default=False, action='store_true')
+
     try:
         args = parser.parse_args()
     except argparse.ArgumentError as error:
@@ -110,16 +107,14 @@ if __name__ == '__main__':
     else:
         logging.basicConfig(stream=sys.stderr, level=logging.ERROR)
 
-    pattern_AWSAccessKeyId = "(?<![A-Z0-9])[A-Z0-9]{20}(?![A-Z0-9])"
-    pattern_AWSSecretKey = "(?<![A-Za-z0-9/+=])[A-Za-z0-9/+=]{40}(?![A-Za-z0-9/+=])"
-    re_AWSAccessKeyId = re.compile(pattern_AWSAccessKeyId)
-    re_AWSSecretKey = re.compile(pattern_AWSSecretKey)
+    pattern_AWSAccessKeyId = r"(?<![A-Z0-9])[A-Z0-9]{20}(?![A-Z0-9])"
+    pattern_AWSSecretKey = r"(?<![A-Za-z0-9/+=])[A-Za-z0-9/+=]{40}(?![A-Za-z0-9/+=])"
 
     AWSAccessKeyId = os.getenv('AWSAccessKeyId', default=None)
     if AWSAccessKeyId is None:
         logging.error('No AWSAccessKeyId in Sys Env Variables')
         sys.exit(1)
-    elif re_AWSAccessKeyId.pattern(AWSAccessKeyId) is False:
+    elif re.match(pattern_AWSAccessKeyId, AWSAccessKeyId) is False:
         logging.error('AWSAccessKeyId Incorrect Pattern, it should be "%s"', pattern_AWSAccessKeyId)
         sys.exit(10)
     else:
@@ -129,7 +124,7 @@ if __name__ == '__main__':
     if AWSSecretKey is None:
         logging.error('No AWSSecretKey in Sys Env Variables')
         sys.exit(2)
-    elif re_AWSSecretKey.pattern(AWSSecretKey) is False:
+    elif re.match(pattern_AWSSecretKey, AWSSecretKey) is False:
         logging.error('AWSSecretKey Incorrect Pattern, it should be "%s"', pattern_AWSSecretKey)
         sys.exit(10)
     else:
@@ -151,6 +146,8 @@ if __name__ == '__main__':
 
     subfolders, fullpath = run_fast_scandir(PATH)
     toRemove = PATH.rsplit('/', 1)[0]
+    if PATH == toRemove:
+        toRemove = PATH.rsplit('\\', 1)[0]
     nbfiles = len(fullpath)
     topath = []
     for path in fullpath:
@@ -160,13 +157,12 @@ if __name__ == '__main__':
         CONFIRM = input('Please confirm the path and files to upload, press Y : ')
         if CONFIRM != 'Y':
             CONFIRM = False
-
     logging.info('Create Boto3 Session')
     s3 = boto3.resource(
         service_name='s3',
         region_name=REGION_NAME,
-        AWSAccessKeyId_id=AWSAccessKeyId,
-        AWSSecretKey=AWSSecretKey
+        aws_access_key_id=AWSAccessKeyId,
+        aws_secret_access_key=AWSSecretKey
     )
     logging.info(s3)
     logging.info('Buckets found %d', len(list(s3.buckets.all())))
@@ -189,7 +185,7 @@ if __name__ == '__main__':
 
     logging.info('Starting to upload %d files in %s S3 bucket', nbfiles, BUCKET_NAME)
     for i in range(0, nbfiles):
-        q.put(fullpath[i][0], topath[i][1], i, nbfiles)
+        q.put((fullpath[i], topath[i], i, nbfiles))
 
     logging.info('Block util all tasks are done')
     q.join()
