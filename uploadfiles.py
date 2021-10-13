@@ -12,6 +12,26 @@ import threading
 import queue
 
 
+class ProgressPercentage(object):
+
+    def __init__(self, filename):
+        self._filename = filename
+        self._size = float(os.path.getsize(filename))
+        self._seen_so_far = 0
+        self._lock = threading.Lock()
+
+    def __call__(self, bytes_amount):
+        # To simplify, assume this is hooked up to a single filename
+        with self._lock:
+            self._seen_so_far += bytes_amount
+            percentage = (self._seen_so_far / self._size) * 100
+            sys.stdout.write(
+                "\r%s  %s / %s  (%.2f%%)" % (
+                    self._filename, self._seen_so_far, self._size,
+                    percentage))
+            sys.stdout.flush()
+
+
 def get_filenames(folder_path):
     filenames = []
     for path, subdirs, files in os.walk(folder_path):
@@ -20,8 +40,7 @@ def get_filenames(folder_path):
     return filenames, len(filenames)
 
 
-def upload(FILENAME):
-
+def upload(filename):
     s3 = boto3.resource(
         service_name='s3',
         region_name=REGION_NAME,
@@ -29,7 +48,7 @@ def upload(FILENAME):
         aws_secret_access_key=AWS_SECRET_ACCESS_KEY
     )
     try:
-        s3.Bucket(BUCKET_NAME).upload_file(Filename=FILENAME, Key=FILENAME)
+        s3.Bucket(BUCKET_NAME).upload_file(Filename=filename, Key=filename, Callback=ProgressPercentage(filename))
     except botocore.exceptions.ClientError as error:
         logging.error(error)
         sys.exit(4)
@@ -70,8 +89,6 @@ if __name__ == '__main__':
         logging.basicConfig(stream=sys.stderr, level=logging.ERROR)
 
     AWS_ACCESS_KEY = os.getenv('AWS_ACCESS_KEY', default=None)
-
-    AWS_ACCESS_KEY = 'AKIA4HHPH6LQIDIOIEQI'                                             # TODO	Remove
     if AWS_ACCESS_KEY is None:
         logging.error('No AWS_ACCESS_KEY in Sys Env Variables')
         sys.exit(1)
@@ -80,8 +97,6 @@ if __name__ == '__main__':
         logging.info('AWS_ACCESS_KEY found')
 
     AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY', default=None)
-
-    AWS_SECRET_ACCESS_KEY = 'Q0cL/ojm3k65mILBhoFDyV9Wr7vKIB/LDfYqu1qJ'                  # TODO	Remove
     if AWS_SECRET_ACCESS_KEY is None:
         logging.error('No AWS_SECRET_ACCESS_KEY in Sys Env Variables')
         sys.exit(2)
@@ -125,26 +140,24 @@ if __name__ == '__main__':
         except botocore.exceptions.ClientError as error:
             logging.error(error)
             sys.exit(3)
-    logging.info('Upload %s to %s', filenames[0], BUCKET_NAME)
-    try:
-        s3.Bucket(BUCKET_NAME).upload_file(Filename=filenames[0], Key=filenames[0])
-    except botocore.exceptions.ClientError as error:
-        logging.error(error)
-        sys.exit(4)
-    logging.info('Upload success')
 
+    logging.info('Creating queue')
     q = queue.Queue()
     threads = []
 
+    logging.info('Start %d workers threads', NB_THREADS)
     for i in range(NB_THREADS):
         t = threading.Thread(target=worker)
         t.start()
         threads.append(t)
 
+    logging.info('Starting to upload %d files in %s S3 bucket', nbfiles, BUCKET_NAME)
     for filename in filenames:
         q.put(filename)
 
+    logging.info('Block util all tasks are done')
     q.join()
+    logging.info('Stopping workers')
     for i in range(NB_THREADS):
         q.put(None)
     for t in threads:
