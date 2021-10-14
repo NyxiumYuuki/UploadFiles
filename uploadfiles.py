@@ -148,7 +148,6 @@ if __name__ == '__main__':
     logging.info('Confirm Y : %s', args.yes)
 
     PATH = args.path
-    PATH = PATH.replace('\\', '/')
     REGION_NAME = args.region
     BUCKET_NAME = args.bucket
     NB_THREADS = args.threads
@@ -156,12 +155,12 @@ if __name__ == '__main__':
 
     subfolders, fullpath = run_fast_scandir(PATH)
     toRemove = PATH.rsplit('/', 1)[0]
-    # if PATH == toRemove:
-    #     toRemove = PATH.rsplit('\\', 1)[0]
+    if PATH == toRemove:
+        toRemove = PATH.rsplit('\\', 1)[0]
     nbfiles = len(fullpath)
     topath = []
     for path in fullpath:
-        topath.append(path.replace(toRemove, ''))
+        topath.append(path.replace(toRemove, '').replace('\\', '/'))
     logging.info('Number of files found in "{}" : {}'.format(args.path, nbfiles))
     while CONFIRM is False:
         CONFIRM = input('Please confirm the path and files to upload, press Y : ')
