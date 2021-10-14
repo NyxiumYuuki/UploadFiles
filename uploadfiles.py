@@ -94,10 +94,6 @@ if __name__ == '__main__':
     required.add_argument('-p', '--path', help='Path of folder to upload (default: .)', default='.', required=True)
     required.add_argument('-b', '--bucket', help='Bucket name (default: None)', default=None, required=True)
     optional.add_argument('-r', '--region', help='AWS S3 Bucket Region (default: eu-west-3)', default='eu-west-3')
-    optional.add_argument('-db', '--disable_boto3',
-                          help='Use of boto3 S3Transfer threads and not another threads algorithms created from '
-                               'scratch (default: True)',
-                          default=True, action='store_false')
     optional.add_argument('-t', '--threads', help='Number of Threads (default: 20)', default=20)
     optional.add_argument('-y', '--yes', help='Confirm path (default: False)', default=False, action='store_true')
 
@@ -182,35 +178,27 @@ if __name__ == '__main__':
             logging.error(error)
             sys.exit(3)
 
-    if args.disable_boto3 is False:
-        logging.info('Boto3 S3Transfer disable - Use of another Threads algorithm')
-        logging.info('Creating queue')
-        q = queue.Queue()
-        threads = []
+    logging.info('Boto3 S3Transfer disable - Use of another Threads algorithm')
+    logging.info('Creating queue')
+    q = queue.Queue()
+    threads = []
 
-        logging.info('Start %d workers threads', NB_THREADS)
-        for i in range(NB_THREADS):
-            t = threading.Thread(target=worker)
-            t.start()
-            threads.append(t)
+    logging.info('Start %d workers threads', NB_THREADS)
+    for i in range(NB_THREADS):
+        t = threading.Thread(target=worker)
+        t.start()
+        threads.append(t)
 
-        logging.info('Starting to upload %d files in %s S3 bucket', nbfiles, BUCKET_NAME)
-        for i in range(0, nbfiles):
-            q.put((fullpath[i], topath[i], i, nbfiles))
+    logging.info('Starting to upload %d files in %s S3 bucket', nbfiles, BUCKET_NAME)
+    for i in range(0, nbfiles):
+        q.put((fullpath[i], topath[i], i, nbfiles))
 
-        logging.info('Block util all tasks are done')
-        q.join()
-        logging.info('Stopping workers')
-        for i in range(NB_THREADS):
-            q.put((None, None, None, None))
-        for t in threads:
-            t.join()
-    else:
-        logging.info('Boto3 S3Transfer')
-        transfer_config = TransferConfig(max_concurrency=NB_THREADS)
-        logging.info('Starting to upload %d files in %s S3 bucket', nbfiles, BUCKET_NAME)
-        for i in range(0, nbfiles):
-            s3.Bucket(BUCKET_NAME).upload_file(Filename=fullpath[i], Key=topath[i], Config=transfer_config,
-                                               Callback=ProgressPercentage(fullpath[i], topath[i], i, nbfiles))
+    logging.info('Block util all tasks are done')
+    q.join()
+    logging.info('Stopping workers')
+    for i in range(NB_THREADS):
+        q.put((None, None, None, None))
+    for t in threads:
+        t.join()
     logging.info('Finished')
     exit(0)
