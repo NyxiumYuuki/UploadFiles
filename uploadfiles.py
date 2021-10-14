@@ -72,7 +72,7 @@ def upload(filepath, filename, current_nb_file, total_nb_files):
 def worker():
     while True:
         filepath, filename, current_nb_file, total_nb_files = q.get()
-        if filepath is None or filename is None:
+        if filepath is None or filename is None or current_nb_file is None or total_nb_files is None:
             break
         if upload(filepath, filename, current_nb_file, total_nb_files):
             q.task_done()
@@ -191,7 +191,7 @@ if __name__ == '__main__':
     q.join()
     logging.info('Stopping workers')
     for i in range(NB_THREADS):
-        q.put(None, None, None)
+        q.put((None, None, None, None))
     for t in threads:
         t.join()
     logging.info('Finished')
