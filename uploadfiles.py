@@ -12,7 +12,6 @@ import botocore
 import threading
 import queue
 import re
-from boto3.s3.transfer import TransferConfig
 
 
 class ProgressPercentage(object):
@@ -151,12 +150,13 @@ if __name__ == '__main__':
 
     subfolders, fullpath = run_fast_scandir(PATH)
     toRemove = PATH.rsplit('/', 1)[0]
+
     if PATH == toRemove:
         toRemove = PATH.rsplit('\\', 1)[0]
     nbfiles = len(fullpath)
     topath = []
     for path in fullpath:
-        topath.append(path.replace(toRemove, '').replace('\\', '/'))
+        topath.append(path.replace(toRemove, '').replace('\\', '/').split('/', 1)[1])
     logging.info('Number of files found in "{}" : {}'.format(args.path, nbfiles))
     while CONFIRM is False:
         CONFIRM = input('Please confirm the path and files to upload, press Y : ')
