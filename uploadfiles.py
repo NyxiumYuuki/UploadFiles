@@ -148,6 +148,7 @@ if __name__ == '__main__':
     logging.info('Confirm Y : %s', args.yes)
 
     PATH = args.path
+    PATH = PATH.replace('\\', '/')
     REGION_NAME = args.region
     BUCKET_NAME = args.bucket
     NB_THREADS = args.threads
@@ -155,8 +156,8 @@ if __name__ == '__main__':
 
     subfolders, fullpath = run_fast_scandir(PATH)
     toRemove = PATH.rsplit('/', 1)[0]
-    if PATH == toRemove:
-        toRemove = PATH.rsplit('\\', 1)[0]
+    # if PATH == toRemove:
+    #     toRemove = PATH.rsplit('\\', 1)[0]
     nbfiles = len(fullpath)
     topath = []
     for path in fullpath:
