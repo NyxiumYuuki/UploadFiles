@@ -12,6 +12,7 @@ import botocore
 import threading
 import queue
 import re
+from boto3.s3.transfer import TransferConfig
 
 
 class ProgressPercentage(object):
@@ -39,7 +40,8 @@ class ProgressPercentage(object):
                     percentage))
             sys.stdout.flush()
 
-def run_fast_scandir(dir):    # dir: str, ext: list
+
+def run_fast_scandir(dir):  # dir: str, ext: list
     subfolders, files = [], []
 
     for f in os.scandir(dir):
@@ -54,6 +56,7 @@ def run_fast_scandir(dir):    # dir: str, ext: list
         files.extend(f)
     return subfolders, files
 
+
 def upload(filepath, filename, current_nb_file, total_nb_files):
     s3 = boto3.resource(
         service_name='s3',
@@ -62,7 +65,9 @@ def upload(filepath, filename, current_nb_file, total_nb_files):
         aws_secret_access_key=AWSSecretKey
     )
     try:
-        s3.Bucket(BUCKET_NAME).upload_file(Filename=filepath, Key=filename, Callback=ProgressPercentage(filepath, filename,current_nb_file, total_nb_files))
+        s3.Bucket(BUCKET_NAME).upload_file(Filename=filepath, Key=filename,
+                                           Callback=ProgressPercentage(filepath, filename, current_nb_file,
+                                                                       total_nb_files))
     except botocore.exceptions.ClientError as error:
         logging.error(error)
         sys.exit(4)
@@ -89,10 +94,14 @@ if __name__ == '__main__':
     required.add_argument('-p', '--path', help='Path of folder to upload (default: .)', default='.', required=True)
     required.add_argument('-b', '--bucket', help='Bucket name (default: None)', default=None, required=True)
     optional.add_argument('-r', '--region', help='AWS S3 Bucket Region (default: eu-west-3)', default='eu-west-3')
+    optional.add_argument('-db', '--disable_boto3',
+                          help='Use of boto3 S3Transfer threads and not another threads algorithms created from '
+                               'scratch (default: True)',
+                          default=True, action='store_false')
     optional.add_argument('-t', '--threads', help='Number of Threads (default: 20)', default=20)
-    optional.add_argument('-y', '-Y', help='Confirm path (default: False)', default=False, action='store_true')
+    optional.add_argument('-y', '--yes', help='Confirm path (default: False)', default=False, action='store_true')
 
-    optional.add_argument('-i', '--info', help='Disable Info mode (default: True)', default=True, action='store_false')
+    optional.add_argument('-i', '--info', help='Info mode (default: True)', default=True, action='store_false')
     optional.add_argument('-d', '--debug', help='Debug mode (default: False)', default=False, action='store_true')
 
     try:
@@ -136,13 +145,13 @@ if __name__ == '__main__':
     logging.info('Region : %s', args.region)
     logging.info('Bucket : %s', args.bucket)
     logging.info('Threads : %s', args.threads)
-    logging.info('Confirm Y : %s', args.y)
+    logging.info('Confirm Y : %s', args.yes)
 
     PATH = args.path
     REGION_NAME = args.region
     BUCKET_NAME = args.bucket
     NB_THREADS = args.threads
-    CONFIRM = args.y
+    CONFIRM = args.yes
 
     subfolders, fullpath = run_fast_scandir(PATH)
     toRemove = PATH.rsplit('/', 1)[0]
@@ -173,26 +182,35 @@ if __name__ == '__main__':
             logging.error(error)
             sys.exit(3)
 
-    logging.info('Creating queue')
-    q = queue.Queue()
-    threads = []
+    if args.disable_boto3 is False:
+        logging.info('Boto3 S3Transfer disable - Use of another Threads algorithm')
+        logging.info('Creating queue')
+        q = queue.Queue()
+        threads = []
 
-    logging.info('Start %d workers threads', NB_THREADS)
-    for i in range(NB_THREADS):
-        t = threading.Thread(target=worker)
-        t.start()
-        threads.append(t)
+        logging.info('Start %d workers threads', NB_THREADS)
+        for i in range(NB_THREADS):
+            t = threading.Thread(target=worker)
+            t.start()
+            threads.append(t)
 
-    logging.info('Starting to upload %d files in %s S3 bucket', nbfiles, BUCKET_NAME)
-    for i in range(0, nbfiles):
-        q.put((fullpath[i], topath[i], i, nbfiles))
+        logging.info('Starting to upload %d files in %s S3 bucket', nbfiles, BUCKET_NAME)
+        for i in range(0, nbfiles):
+            q.put((fullpath[i], topath[i], i, nbfiles))
 
-    logging.info('Block util all tasks are done')
-    q.join()
-    logging.info('Stopping workers')
-    for i in range(NB_THREADS):
-        q.put((None, None, None, None))
-    for t in threads:
-        t.join()
+        logging.info('Block util all tasks are done')
+        q.join()
+        logging.info('Stopping workers')
+        for i in range(NB_THREADS):
+            q.put((None, None, None, None))
+        for t in threads:
+            t.join()
+    else:
+        logging.info('Boto3 S3Transfer')
+        transfer_config = TransferConfig(max_concurrency=NB_THREADS)
+        logging.info('Starting to upload %d files in %s S3 bucket', nbfiles, BUCKET_NAME)
+        for i in range(0, nbfiles):
+            s3.Bucket(BUCKET_NAME).upload_file(Filename=fullpath[i], Key=topath[i], Config=transfer_config,
+                                               Callback=ProgressPercentage(fullpath[i], topath[i], i, nbfiles))
     logging.info('Finished')
     exit(0)
